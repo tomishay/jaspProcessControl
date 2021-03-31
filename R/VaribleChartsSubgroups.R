@@ -14,8 +14,8 @@ VaribleChartsSubgroups <- function(jaspResults, dataset, options){
     }
   }
   if (makeTime && length(variables) > 0) {
-    splitFactor      <- dataset[[.v(time)]]
-    splitLevels      <- levels(splitFactor)
+	# For the time-variable we first convert the original factor to a character so that the order of input is kept!
+	dataset[[.v(time)]] <- as.character(dataset[[.v(time)]])
   }
   #Checking for errors in the dataset
   .hasErrors(dataset, type = c('observations', 'infinity', 'missingValues'),
@@ -119,12 +119,15 @@ Xbar.date <- function(dataset, options){
     )
   )
 
+  # Then here we convert the time-character to a factor for which we specify the levels ourselves according to the order in the data
+  xLabels <- factor(dataset[[.v(options$time)]], levels = unique(as.character(dataset[[.v(options$time)]])))
+
   p <- ggplot2::ggplot(data_plot2, ggplot2::aes(x = subgroups2, y = means)) +
     ggplot2::geom_hline(yintercept =  center2, color = 'green', size = 1) +
     ggplot2::geom_hline(yintercept = c(UCL2, LCL2), color = "red", linetype = "dashed", size = 1) +
     ggplot2::geom_label(data = dfLabel2, mapping = ggplot2::aes(x = x, y = y, label = l),inherit.aes = FALSE, size = 4.5) +
     ggplot2::scale_y_continuous(name = gettext("Subgroup mean") ,limits = yLimits, breaks = yBreaks) +
-    ggplot2::scale_x_discrete(name = gettext('Subgroup'), breaks = c(xBreaks2), limits = c(xBreaks2)) +
+    ggplot2::scale_x_continuous(name = gettext('Subgroup'), breaks = 1:length(subgroups2), labels = xLabels) +
     jaspGraphs::geom_line() +
     jaspGraphs::geom_point(size = 4, fill = ifelse(data_plot2$means > UCL2 | data_plot2$means < LCL2, "red", "blue")) +
     jaspGraphs::geom_rangeframe() +
