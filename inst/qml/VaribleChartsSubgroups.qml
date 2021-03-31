@@ -24,23 +24,36 @@ Form
 			title:								qsTr("Variables")
 			allowedColumns:						["scale"]
 		}
+		AssignedVariablesList
+    {
+		  id:                 			time
+		  name:               			"time"
+		  title:             			 	qsTr("Time Stamp (optional)")
+		  singleVariable:    	 			true
+			allowedColumns:     			["nominal", "nominalText", "ordinal", "scale"]
+	  }
 	}
 
 	Group
 	{
 		title: 									qsTr("Charts for Subgroups")
 		columns: 								1
-	
-		CheckBox 
-		{	
+
+		CheckBox
+		{
 			name: 								"Xbarchart"
-			label: 								qsTr("X-bar & R chart")              
+			label: 								qsTr("X-bar & R chart")
 		}
 
-		CheckBox 
-		{	
+		CheckBox
+		{
 			name: 								"Schart"
 			label: 								qsTr("X-bar & S chart")
+		}
+	  CheckBox
+		{
+			name: 								"Dchart"
+			label: 								qsTr("Date chart")
 		}
     }
 }
