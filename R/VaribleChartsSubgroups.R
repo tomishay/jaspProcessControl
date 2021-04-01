@@ -47,7 +47,7 @@ VaribleChartsSubgroups <- function(jaspResults, dataset, options){
     jaspResults[["SPlot"]] <- createJaspPlot(title = gettext("S Chart"), width = 700, height = 350)
     jaspResults[["SPlot"]]$dependOn(c("Schart", "variables"))
     SPlot<- jaspResults[["SPlot"]]
-    SPlot$plotObject <- .Schart(dataset = dataset, options = options)
+    SPlot$plotObject <- .Schart(dataset = dataset, options = options, time = ifelse(makeTime, TRUE, FALSE))
   }
 #Date chart
   if(options$Dchart && is.null(jaspResults[["Dchart"]]) &&  length(options$variables) > 1){
@@ -59,12 +59,11 @@ VaribleChartsSubgroups <- function(jaspResults, dataset, options){
 }
 
 #Functions for control charts
-.Schart <- function(dataset, options){
+.Schart <- function(dataset, options, time = FALSE){
   data1 <- dataset[, options$variables]
   Stdv <- apply(data1, 1, function(x) sd(x))
   subgroups <- c(1:length(Stdv))
   data_plot <- data.frame(subgroups = subgroups, Stdv = Stdv)
-
   sixsigma <- qcc::qcc(data1, type ='S', plot=FALSE)
   center <- sixsigma$center
   UCL <- max(sixsigma$limits)
@@ -82,16 +81,40 @@ VaribleChartsSubgroups <- function(jaspResults, dataset, options){
       gettextf("LCL = %g",   round(LCL, 3))
     )
   )
-  p <- ggplot2::ggplot(data_plot, ggplot2::aes(x = subgroups, y = Stdv)) +
-    ggplot2::geom_hline(yintercept =  center, color = 'black') +
-    ggplot2::geom_hline(yintercept = c(UCL, LCL), color = "darkred") +
-    ggplot2::geom_label(data = dfLabel, mapping = ggplot2::aes(x = x, y = y, label = l),inherit.aes = FALSE, size = 4.5) +
-    ggplot2::scale_y_continuous(name =  gettext("Standard Deviation") ,limits = yLimits, breaks = yBreaks) +
-    ggplot2::scale_x_continuous(name =  gettext('Subgroup'), breaks = xBreaks, limits = range(xLimits)) +
-    jaspGraphs::geom_line() +
-    jaspGraphs::geom_point(size = 4, fill = ifelse(data_plot$Stdv > UCL | data_plot$Stdv < LCL, 'red', 'gray')) +
-    jaspGraphs::geom_rangeframe() +
-    jaspGraphs::themeJaspRaw()
+  .hasErrors(
+    dataset,
+    all.target = options$time,
+    custom = function() {
+      if (time == TRUE & length(dataset[[.v(options$time)]]) < 1)
+        return("Please insert Time")
+    },
+    exitAnalysisIfErrors = TRUE
+  )
+
+  if (time){
+    xLabels <- factor(dataset[[.v(options$time)]], levels = unique(as.character(dataset[[.v(options$time)]])))
+    p <- ggplot2::ggplot(data_plot, ggplot2::aes(x = subgroups, y = Stdv)) +
+      ggplot2::geom_hline(yintercept =  center, color = 'black') +
+      ggplot2::geom_hline(yintercept = c(UCL, LCL), color = "darkred") +
+      ggplot2::geom_label(data = dfLabel, mapping = ggplot2::aes(x = x, y = y, label = l),inherit.aes = FALSE, size = 4.5) +
+      ggplot2::scale_y_continuous(name =  gettext("Standard Deviation") ,limits = yLimits, breaks = yBreaks) +
+      ggplot2::scale_x_continuous(name = gettext('Subgroup'), breaks = 1:length(subgroups), labels = xLabels) +
+      jaspGraphs::geom_line() +
+      jaspGraphs::geom_point(size = 4, fill = ifelse(data_plot$Stdv > UCL | data_plot$Stdv < LCL, 'red', 'gray')) +
+      jaspGraphs::geom_rangeframe() +
+      jaspGraphs::themeJaspRaw()
+  } else{
+    p <- ggplot2::ggplot(data_plot, ggplot2::aes(x = subgroups, y = Stdv)) +
+      ggplot2::geom_hline(yintercept =  center, color = 'black') +
+      ggplot2::geom_hline(yintercept = c(UCL, LCL), color = "darkred") +
+      ggplot2::geom_label(data = dfLabel, mapping = ggplot2::aes(x = x, y = y, label = l),inherit.aes = FALSE, size = 4.5) +
+      ggplot2::scale_y_continuous(name =  gettext("Standard Deviation") ,limits = yLimits, breaks = yBreaks) +
+      ggplot2::scale_x_continuous(name = gettext('Subgroup'), breaks = xBreaks) +
+      jaspGraphs::geom_line() +
+      jaspGraphs::geom_point(size = 4, fill = ifelse(data_plot$Stdv > UCL | data_plot$Stdv < LCL, 'red', 'gray')) +
+      jaspGraphs::geom_rangeframe() +
+      jaspGraphs::themeJaspRaw()
+  }
 
   return(p)
 }
